@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="App Engine Deploy" type="gcp-app-engine-deploy" factoryName="Google App Engine Deployment" server-name="Google App Engine">
+    <deployment type="maven-build-source" name="airwaves-web" project="airwaves-210210" version="auto">
+      <settings cloudProjectName="airwaves-210210" environment="APP_ENGINE_STANDARD" googleUsername="danmarshall208@gmail.com" version="" />
+    </deployment>
+    <method>
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="package" />
+    </method>
+  </configuration>
+</component>

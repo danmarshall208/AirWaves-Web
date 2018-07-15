@@ -3,7 +3,6 @@
 !gradle/wrapper/gradle-wrapper.jar
 /target/
 !.mvn/wrapper/maven-wrapper.jar
-!.idea/runConfigurations/
 
 ### STS ###
 .apt_generated
@@ -15,11 +14,12 @@
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea
+.idea/*
 *.iws
 *.iml
 *.ipr
 /out/
+!.idea/runConfigurations/
 
 ### NetBeans ###
 /nbproject/private/
