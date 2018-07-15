@@ -20,6 +20,7 @@
 *.ipr
 /out/
 !.idea/runConfigurations/
+.idea/runConfigurations/App_Engine_Deploy.xml
 
 ### NetBeans ###
 /nbproject/private/
@@ -27,3 +28,4 @@
 /dist/
 /nbdist/
 /.nb-gradle/
+.idea/runConfigurations/App_Engine_Deploy.xml
