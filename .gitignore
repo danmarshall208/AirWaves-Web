@@ -3,6 +3,7 @@
 !gradle/wrapper/gradle-wrapper.jar
 /target/
 !.mvn/wrapper/maven-wrapper.jar
+!.idea/runConfigurations/
 
 ### STS ###
 .apt_generated

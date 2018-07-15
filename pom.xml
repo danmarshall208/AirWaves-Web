@@ -72,8 +72,6 @@
                         <jvmFlag>-Xdebug</jvmFlag>
                         <jvmFlag>-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005</jvmFlag>
                     </jvmFlags>
-                    <maxModuleInstances>1</maxModuleInstances>
-                    <devAppserverLogLevel>debug</devAppserverLogLevel>
                 </configuration>
             </plugin>
         </plugins>
