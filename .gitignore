@@ -28,4 +28,3 @@
 /dist/
 /nbdist/
 /.nb-gradle/
-.idea/runConfigurations/App_Engine_Deploy.xml
