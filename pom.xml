@@ -66,8 +66,6 @@
             <artifactId>appengine-api-1.0-sdk</artifactId>
             <version>1.9.64</version>
         </dependency>
-
-
     </dependencies>
 
     <build>
