@@ -66,6 +66,12 @@
             <artifactId>appengine-api-1.0-sdk</artifactId>
             <version>1.9.64</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.3</version>
+        </dependency>
     </dependencies>
 
     <build>

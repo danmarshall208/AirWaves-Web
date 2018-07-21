@@ -3,12 +3,18 @@ package com.airwaves.airwavesweb.datastore;
 import com.google.appengine.api.datastore.Entity;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class User {
 
     private Datastore datastore;
 
     private Entity userEntity;
+
+    public static List<User> getAll() {
+        return Datastore.getDatastore().queryList("User", null).stream().map(x -> new User(x.getKey().getName())).collect(Collectors.toList());
+    }
 
     public User() {
         this.datastore = Datastore.getDatastore();
@@ -46,18 +52,27 @@ public class User {
     }
 
     public void setLocation(double latitude, double longitude) {
-        this.userEntity.setProperty("latitude", latitude);
-        this.userEntity.setProperty("longitude", longitude);
+        this.userEntity.setUnindexedProperty("latitude", latitude);
+        this.userEntity.setUnindexedProperty("longitude", longitude);
     }
 
     public void setFavSongs(String fav_song_1, String fav_song_2, String fav_song_3) {
-        this.userEntity.setProperty("fav_song_1", fav_song_1);
-        this.userEntity.setProperty("fav_song_2", fav_song_2);
-        this.userEntity.setProperty("fav_song_3", fav_song_3);
+        this.userEntity.setUnindexedProperty("fav_song_1", fav_song_1);
+        this.userEntity.setUnindexedProperty("fav_song_2", fav_song_2);
+        this.userEntity.setUnindexedProperty("fav_song_3", fav_song_3);
+    }
+
+    public Date getUpdated() {
+        return (Date) this.userEntity.getProperty("updated");
     }
 
     public void save() {
-        this.userEntity.setProperty("updated", new Date());
+        this.userEntity.setUnindexedProperty("updated", new Date());
         this.datastore.save(this.userEntity);
+    }
+
+    public void delete() {
+        this.getCluster().removeUser(this);
+        this.datastore.delete(this.userEntity);
     }
 }

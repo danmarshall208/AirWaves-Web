@@ -11,8 +11,8 @@ public class Cluster {
 
     private Datastore datastore;
     private Entity clusterEntity;
-    private int maxUsers = 200;
-    private int minUsers = 50;
+    private int maxUsers = 20;
+    private int minUsers = 5;
 
     public static List<Cluster> getAll() {
         return Datastore.getDatastore().queryList("Cluster", null).stream().map(x -> new Cluster(x.getKey().getId())).collect(Collectors.toList());
@@ -21,7 +21,8 @@ public class Cluster {
     public Cluster() {
         this.datastore = Datastore.getDatastore();
         this.clusterEntity = new Entity("Cluster");
-        this.clusterEntity.setProperty("users", 0);
+        this.clusterEntity.setUnindexedProperty("users", 0);
+        this.setLocation(0.0, 0.0);
         this.datastore.save(this.clusterEntity);
     }
 
@@ -88,8 +89,12 @@ public class Cluster {
         double avgLatitude = users.stream().mapToDouble(User::getLatitude).average().getAsDouble();
         double avgLongitude = users.stream().mapToDouble(User::getLongitude).average().getAsDouble();
 
-        this.clusterEntity.setProperty("latitude", avgLatitude);
-        this.clusterEntity.setProperty("longitude", avgLongitude);
+        this.setLocation(avgLatitude, avgLongitude);
+    }
+
+    public void setLocation(double latitude, double longitude) {
+        this.clusterEntity.setUnindexedProperty("latitude", latitude);
+        this.clusterEntity.setUnindexedProperty("longitude", longitude);
     }
 
     public void splitOrMerge() {
@@ -101,7 +106,7 @@ public class Cluster {
     }
 
     private void adjustUsers(int change) {
-        this.clusterEntity.setProperty("users", this.countUsers() + change);
+        this.clusterEntity.setUnindexedProperty("users", this.countUsers() + change);
     }
 
     private void split() {
