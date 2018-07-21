@@ -2,6 +2,8 @@ package com.airwaves.airwavesweb.datastore;
 
 import com.google.appengine.api.datastore.Entity;
 
+import java.util.Date;
+
 public class User {
 
     private Datastore datastore;
@@ -27,11 +29,23 @@ public class User {
         return new Cluster((long) clusterId);
     }
 
-    public void setCluster(Cluster cluster) {
-        this.userEntity.setProperty("cluster", cluster.getId());
+    void setCluster(Cluster cluster) {
+        if (cluster == null) {
+            this.userEntity.setProperty("cluster", null);
+        } else {
+            this.userEntity.setProperty("cluster", cluster.getId());
+        }
     }
 
-    public void setLocation(float latitude, float longitude) {
+    public double getLatitude() {
+        return (double) this.userEntity.getProperty("latitude");
+    }
+
+    public double getLongitude() {
+        return (double) this.userEntity.getProperty("longitude");
+    }
+
+    public void setLocation(double latitude, double longitude) {
         this.userEntity.setProperty("latitude", latitude);
         this.userEntity.setProperty("longitude", longitude);
     }
@@ -43,6 +57,7 @@ public class User {
     }
 
     public void save() {
+        this.userEntity.setProperty("updated", new Date());
         this.datastore.save(this.userEntity);
     }
 }
