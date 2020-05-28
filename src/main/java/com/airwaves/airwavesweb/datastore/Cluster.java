@@ -1,112 +1,119 @@
 package com.airwaves.airwavesweb.datastore;
 
 import com.airwaves.airwavesweb.util.Util;
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Query;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.SetOptions;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Cluster {
 
-    private Datastore datastore;
-    private Entity clusterEntity;
-    private int maxUsers = 20;
+    private Firestore db;
+    private DocumentReference clusterDocument;
+    public static int maxUsers = 20;
     private int minUsers = 5;
+    public static int writes = 0;
+    public static int reads = 0;
 
     public static List<Cluster> getAll() {
-        return Datastore.getDatastore().queryList("Cluster", null).stream().map(x -> new Cluster(x.getKey().getId())).collect(Collectors.toList());
+        try {
+            return Database.getDb().collection("cluster").get().get().getDocuments()
+                    .stream().map(x -> new Cluster(x.getId())).collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Cluster() {
-        this.datastore = Datastore.getDatastore();
-        this.clusterEntity = new Entity("Cluster");
-        this.clusterEntity.setUnindexedProperty("users", 0);
-        this.setLocation(0.0, 0.0);
-        this.datastore.save(this.clusterEntity);
+        this.db = Database.getDb();
+        this.clusterDocument = this.db.collection("cluster").document();
+        this.clusterDocument.set(Map.of(
+                "latitude", 0.0,
+                "longitude", 0.0,
+                "users", 0
+        ));
     }
 
-    public Cluster(long id) {
-        this.datastore = Datastore.getDatastore();
-        this.clusterEntity = this.datastore.getOrCreate("Cluster", id);
+    public Cluster(String id) {
+        this.db = Database.getDb();
+        this.clusterDocument = this.db.collection("cluster").document(id);
     }
 
-    public long getId() {
-        return this.clusterEntity.getKey().getId();
+    public Cluster(List<User> users, double latitude, double longitude) {
+        this.db = Database.getDb();
+        this.clusterDocument = this.db.collection("cluster").document();
+        this.clusterDocument.set(Map.of(
+                "latitude", latitude,
+                "longitude", longitude,
+                "users", users.size()
+        ));
+    }
+
+    public String getId() {
+        return this.clusterDocument.getId();
+    }
+
+    public void set(Map<String, Object> data) {
+        this.clusterDocument.set(data, SetOptions.merge());
+        Cluster.writes++;
+    }
+
+    public void overwrite(Map<String, Object> data) {
+        this.clusterDocument.set(data);
+    }
+
+    public DocumentSnapshot snapshot() {
+        try {
+            Cluster.reads++;
+            return this.clusterDocument.get().get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public double getLatitude() {
-        return (double) this.clusterEntity.getProperty("latitude");
+        var latitude = this.snapshot().getDouble("latitude");
+        return latitude != null ? latitude : 0;
     }
 
     public double getLongitude() {
-        return (double) this.clusterEntity.getProperty("longitude");
+        var longitude = this.snapshot().getDouble("longitude");
+        return longitude != null ? longitude : 0;
     }
 
     public List<User> getUsers() {
-        Query.Filter filter = new Query.FilterPredicate("cluster", Query.FilterOperator.EQUAL, this.getId());
-        return this.datastore.queryList("User", filter).stream().map(x -> new User(x.getKey().getName())).collect(Collectors.toList());
-    }
-
-    public void addUser(User user) {
-        // Already here
-        if (this.equals(user.getCluster())) {
-            return;
+        try {
+            return this.db.collection("user").whereEqualTo("cluster", this.getId()).get().get().getDocuments()
+                    .stream().map(x -> new User(x.getId())).collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
-        user.setCluster(this);
-        user.save();
-
-        this.adjustUsers(1);
-        this.calculatePosition();
-        this.save();
-    }
-
-    public void removeUser(User user) {
-        user.setCluster(null);
-        user.save();
-        this.adjustUsers(-1);
-        this.save();
-    }
-
-    public void save() {
-        if (this.countUsers() <= 0) {
-            this.datastore.delete(this.clusterEntity);
-        } else {
-            this.datastore.save(this.clusterEntity);
-        }
-    }
-
-    public boolean equals(Cluster cluster) {
-        if (cluster == null) {
-            return false;
-        }
-        return this.getId() == cluster.getId();
     }
 
     public void calculatePosition() {
         List<User> users = this.getUsers();
-        double avgLatitude = users.stream().mapToDouble(User::getLatitude).average().getAsDouble();
-        double avgLongitude = users.stream().mapToDouble(User::getLongitude).average().getAsDouble();
+        var avgLatitude = users.stream().mapToDouble(User::getLatitude).average();
+        var avgLongitude = users.stream().mapToDouble(User::getLongitude).average();
 
-        this.setLocation(avgLatitude, avgLongitude);
+        if (avgLatitude.isPresent() && avgLongitude.isPresent()) {
+            this.setLocation(avgLatitude.getAsDouble(), avgLongitude.getAsDouble());
+        }
     }
 
     public void setLocation(double latitude, double longitude) {
-        this.clusterEntity.setUnindexedProperty("latitude", latitude);
-        this.clusterEntity.setUnindexedProperty("longitude", longitude);
+        this.set(Map.of("latitude", latitude, "longitude", longitude));
     }
 
     public void splitOrMerge() {
-        if (this.getUsers().size() > this.maxUsers) {
+        if (this.getUsers().size() > Cluster.maxUsers) {
             this.split();
         } else if (this.getUsers().size() < this.minUsers) {
             this.merge();
         }
-    }
-
-    private void adjustUsers(int change) {
-        this.clusterEntity.setUnindexedProperty("users", this.countUsers() + change);
     }
 
     private void split() {
@@ -114,8 +121,7 @@ public class Cluster {
         List<User> users = this.getUsers();
         for (int i = 0; i < users.size() / 2; i++) {
             User user = users.get(i);
-            this.removeUser(user);
-            newCluster.addUser(user);
+            user.setCluster(newCluster);
         }
     }
 
@@ -123,25 +129,12 @@ public class Cluster {
         Cluster closest = Util.findClosestCluster(this);
         if (closest != null) {
             for (User user : this.getUsers()) {
-                this.removeUser(user);
-                closest.addUser(user);
+                user.setCluster(closest);
             }
         }
     }
 
-    private int countUsers() {
-        // Stupid ass datastore sometimes returns ints and sometimes longs and sometimes null
-        Object users = this.clusterEntity.getProperty("users");
-
-        int intUsers;
-        if (users == null) {
-            intUsers = 0;
-        } else if (users instanceof Integer) {
-            intUsers = (int) users;
-        } else {
-            intUsers = ((Long) users).intValue();
-        }
-
-        return intUsers;
+    public void delete() {
+        this.clusterDocument.delete();
     }
 }

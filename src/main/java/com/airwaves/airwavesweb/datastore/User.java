@@ -1,78 +1,99 @@
 package com.airwaves.airwavesweb.datastore;
 
-import com.google.appengine.api.datastore.Entity;
+import com.google.cloud.firestore.*;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class User {
 
-    private Datastore datastore;
+    private Firestore db;
+    private DocumentReference userDocument;
 
-    private Entity userEntity;
+    public static int writes = 0;
+    public static int reads = 0;
 
     public static List<User> getAll() {
-        return Datastore.getDatastore().queryList("User", null).stream().map(x -> new User(x.getKey().getName())).collect(Collectors.toList());
+        try {
+            return Database.getDb().collection("user").get().get().getDocuments().stream().map(x -> new User(x.getId())).collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public User() {
-        this.datastore = Datastore.getDatastore();
-        this.userEntity = new Entity("User");
-        this.datastore.save(this.userEntity);
+        this.db = Database.getDb();
+        this.userDocument = this.db.collection("user").document();
     }
 
     public User(String id) {
-        this.datastore = Datastore.getDatastore();
-        this.userEntity = this.datastore.getOrCreate("User", id);
+        this.db = Database.getDb();
+        this.userDocument = this.db.collection("user").document(id);
+    }
+
+    public String getId() {
+        return this.userDocument.getId();
+    }
+
+    public void set(Map<String, Object> data) {
+        var mutable = new HashMap<>(data);
+        mutable.put("updated", new Date());
+        this.userDocument.set(mutable, SetOptions.merge());
+        User.writes++;
+    }
+
+    public void overwrite(Map<String, Object> data) {
+        this.userDocument.set(data);
+    }
+
+    public DocumentSnapshot snapshot() {
+        try {
+            User.reads++;
+            return this.userDocument.get().get();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean exists() {
+        return this.snapshot().exists();
     }
 
     public Cluster getCluster() {
-        Object clusterId = this.userEntity.getProperty("cluster");
-        if (clusterId == null) {
-            return null;
-        }
-        return new Cluster((long) clusterId);
+        var clusterId = this.snapshot().getString("cluster");
+        return clusterId == null ? null : new Cluster(clusterId);
     }
 
-    void setCluster(Cluster cluster) {
-        if (cluster == null) {
-            this.userEntity.setProperty("cluster", null);
-        } else {
-            this.userEntity.setProperty("cluster", cluster.getId());
-        }
+    public void setCluster(Cluster cluster) {
+        this.set(Map.of("cluster", cluster == null ? FieldValue.delete() : cluster.getId()));
     }
 
     public double getLatitude() {
-        return (double) this.userEntity.getProperty("latitude");
+        var latitude = this.snapshot().getDouble("latitude");
+        return latitude != null ? latitude : 0;
     }
 
     public double getLongitude() {
-        return (double) this.userEntity.getProperty("longitude");
+        var longitude = this.snapshot().getDouble("longitude");
+        return longitude != null ? longitude : 0;
     }
 
     public void setLocation(double latitude, double longitude) {
-        this.userEntity.setUnindexedProperty("latitude", latitude);
-        this.userEntity.setUnindexedProperty("longitude", longitude);
+        this.set(Map.of("latitude", latitude, "longitude", longitude));
     }
 
-    public void setFavSongs(String fav_song_1, String fav_song_2, String fav_song_3) {
-        this.userEntity.setUnindexedProperty("fav_song_1", fav_song_1);
-        this.userEntity.setUnindexedProperty("fav_song_2", fav_song_2);
-        this.userEntity.setUnindexedProperty("fav_song_3", fav_song_3);
+    public void setFavSongs(List<String> songs) {
+        this.set(Map.of("favourite_songs", songs));
     }
 
     public Date getUpdated() {
-        return (Date) this.userEntity.getProperty("updated");
-    }
-
-    public void save() {
-        this.userEntity.setUnindexedProperty("updated", new Date());
-        this.datastore.save(this.userEntity);
+        return this.snapshot().getDate("updated");
     }
 
     public void delete() {
-        this.getCluster().removeUser(this);
-        this.datastore.delete(this.userEntity);
+        this.userDocument.delete();
     }
 }

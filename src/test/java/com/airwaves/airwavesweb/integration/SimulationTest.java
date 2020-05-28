@@ -46,6 +46,7 @@ public class SimulationTest {
                 this.postSongs(user);
                 Thread.sleep(10);
             }
+            Thread.sleep(10000);
         }
     }
 

@@ -14,18 +14,11 @@ public class GpsController {
     @PostMapping(value = "/gps")
     public void receive_gps(@RequestHeader String Authorization, @RequestParam String latitude, @RequestParam String longitude) {
         User user = new User(Authorization);
-        user.setLocation(Double.valueOf(latitude), Double.valueOf(longitude));
-        user.save();
+        user.setLocation(Double.parseDouble(latitude), Double.parseDouble(longitude));
 
-        Cluster cluster = Util.findClosestCluster(user);
-        if (cluster == null) {
-            cluster = new Cluster();
+        if (!user.exists()) {
+            Cluster cluster = Util.findClosestCluster(user);
+            user.setCluster(cluster);
         }
-
-        if (user.getCluster() != null && !user.getCluster().equals(cluster)) {
-            user.getCluster().removeUser(user);
-        }
-
-        cluster.addUser(user);
     }
 }

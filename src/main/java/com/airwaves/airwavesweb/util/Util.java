@@ -15,7 +15,7 @@ public class Util {
     }
 
     public static Cluster findClosestCluster(Cluster cluster) {
-        Map<Long, Cluster> clusters = Cluster.getAll().stream().collect(Collectors.toMap(Cluster::getId, Function.identity()));
+        Map<String, Cluster> clusters = Cluster.getAll().stream().collect(Collectors.toMap(Cluster::getId, Function.identity()));
         // Remove self
         clusters.remove(cluster.getId());
 
