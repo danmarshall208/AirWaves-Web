@@ -1,21 +1,34 @@
 package com.airwaves.airwavesweb.datastore
 
-import com.google.cloud.firestore.DocumentReference
 import java.util.*
 
 abstract class Document(private val id: String? = null,
-                        data: HashMap<String, Any>? = null) {
+                        initialData: HashMap<String, Any>? = null) {
+
+    abstract val collectionName: String
 
     private val db by lazy { Database.getDb() }
-    abstract val collectionName: String
+
     private val documentRef by lazy {
+        val collection = db.collection(collectionName)
         if (id != null) {
-            db.collection(collectionName).document(id)
+            collection.document(id)
         } else {
-            db.collection(collectionName).document()
+            collection.document()
         }
     }
-    private val data: HashMap<String, Any>? by lazy { data ?: defaultData() }
+
+    // Reads the data if both initial and default are null (or something)
+    private val data by lazy {
+        initialData ?: defaultData() ?: {
+            try {
+                Cluster.reads++
+                documentRef.get().get().data?.let { HashMap(it) }
+            } catch (e: Exception) {
+                throw RuntimeException(e)
+            }
+        }
+    }
 
     init {
         if (id == null) {
@@ -24,35 +37,19 @@ abstract class Document(private val id: String? = null,
     }
 
     fun save() {
-        documentRef.set(data!!)
+        documentRef.set(data)
         //this.getClass().Cluster.writes++;
     }
 
-    fun getDocData(): HashMap<String, Any>? {
-        if (data == null) {
-            try {
-                Cluster.reads++
-                val data = documentRef.get().get().data
-                this.data = data?.let { HashMap(it) } ?: defaultData()
-            } catch (e: Exception) {
-                throw RuntimeException(e)
-            }
-        }
-        return data
-    }
-
-    abstract fun defaultData(): HashMap<String, Any>
+    abstract fun defaultData(): HashMap<String, Any>?
 
     companion object {
         var writes = 0
         var reads = 0
 
-        fun <T> getAll(type: Class<T>, collectionName: String?): List<T> {
-            val documents = ArrayList<T>()
-            for (document in Database.getDb().collection("collectionName").get().get().documents) {
-                documents.add(type.getConstructor().newInstance(document.id))
-            }
-            return documents
-        }
+        fun <T> getAll(type: Class<T>, collectionName: String): List<T> =
+                Database.getDb().collection(collectionName).get().get().documents.map { document ->
+                    type.getConstructor().newInstance(document.id)
+                }
     }
 }
