@@ -12,6 +12,7 @@ public class User {
 
     private Firestore db;
     private DocumentReference userDocument;
+    private HashMap<String, Object> data;
 
     public static int writes = 0;
     public static int reads = 0;
@@ -36,6 +37,19 @@ public class User {
 
     public String getId() {
         return this.userDocument.getId();
+    }
+
+    private Map<String, Object> getData() {
+        if (this.data == null) {
+            try {
+                Cluster.reads++;
+                var data = this.userDocument.get().get().getData();
+                this.data = data != null ? new HashMap<>(data) : new HashMap<>();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return this.data;
     }
 
     public void set(Map<String, Object> data) {
@@ -64,7 +78,7 @@ public class User {
 
     public Cluster getCluster() {
         var clusterId = this.snapshot().getString("cluster");
-        return clusterId == null ? null : new Cluster(clusterId);
+        return clusterId == null ? null : new Cluster();//clusterId);
     }
 
     public void setCluster(Cluster cluster) {
