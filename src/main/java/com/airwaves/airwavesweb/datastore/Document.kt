@@ -3,31 +3,32 @@ package com.airwaves.airwavesweb.datastore
 import com.google.cloud.firestore.DocumentReference
 import java.util.*
 
-abstract class Document(id: String? = null, data: HashMap<String, Any>? = null) {
-    private var db = Database.getDb()
-    abstract val collectionName: String
-    private var documentRef: DocumentReference
-    private var data: HashMap<String, Any>? = null
+abstract class Document(private val id: String? = null,
+                        data: HashMap<String, Any>? = null) {
 
-    init {
-        this.data = data ?: defaultData()
-        if (id == null) {
-            documentRef = db.collection(collectionName).document()
-            save()
+    private val db by lazy { Database.getDb() }
+    abstract val collectionName: String
+    private val documentRef by lazy {
+        if (id != null) {
+            db.collection(collectionName).document(id)
         } else {
-            documentRef = db.collection(collectionName).document(id)
+            db.collection(collectionName).document()
         }
     }
+    private val data: HashMap<String, Any>? by lazy { data ?: defaultData() }
 
-    val id: String
-        get() = documentRef.id
+    init {
+        if (id == null) {
+            save()
+        }
+    }
 
     fun save() {
         documentRef.set(data!!)
         //this.getClass().Cluster.writes++;
     }
 
-    fun getData(): HashMap<String, Any>? {
+    fun getDocData(): HashMap<String, Any>? {
         if (data == null) {
             try {
                 Cluster.reads++
