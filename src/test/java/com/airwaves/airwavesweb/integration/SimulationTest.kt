@@ -12,10 +12,11 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 
 class SimulationTest {
-    var BASE_URL = "http://localhost:8080"
-    var GPS_POST_URL = BASE_URL + "/gps"
-    var SONGS_POST_URL = BASE_URL + "/fav-songs"
-    var SONG_GET_URL = BASE_URL + "/song"
+    //var BASE_URL = "http://localhost:8080"
+    var BASE_URL = "https://airwaves-web-gc7hm476va-uc.a.run.app/"
+    var GPS_POST_URL = "$BASE_URL/gps"
+    var SONGS_POST_URL = "$BASE_URL/fav-songs"
+    var SONG_GET_URL = "$BASE_URL/song"
 
     @Test
     fun runTest() {
@@ -39,7 +40,7 @@ class SimulationTest {
                 postGps(user)
                 postSongs(user)
                 println(getSong(user))
-                Thread.sleep(10)
+                Thread.sleep(1000)
             }
             Thread.sleep(10000)
         }
@@ -47,8 +48,8 @@ class SimulationTest {
 
     fun postGps(user: TestUser) {
         val arguments = mapOf(
-                "latitude" to java.lang.Double.toString(user.latitude),
-                "longitude" to java.lang.Double.toString(user.longitude)
+                "latitude" to user.latitude.toString(),
+                "longitude" to user.longitude.toString()
         )
         post(GPS_POST_URL, arguments, user.id!!)
     }
@@ -62,38 +63,40 @@ class SimulationTest {
         post(SONGS_POST_URL, arguments, user.id!!)
     }
 
-    fun getSong(user: TestUser): String {
+    fun getSong(user: TestUser): String? {
         return get(SONG_GET_URL, null, user.id!!)
     }
 
-    fun post(url: String, arguments: Map<String, String?>, id: String) {
+    fun post(url: String, arguments: Map<String, String?>, id: String): String? {
         val client = HttpClient.newBuilder().build()
         val request = HttpRequest.newBuilder(URI.create(url))
                 .header("Authorization", id)
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(ofFormData(arguments))
                 .build()
-        try {
+        return try {
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            response.body()
         } catch (e: Exception) {
             e.printStackTrace()
+            null
         }
         // Print out the response message
         //System.out.println(EntityUtils.toString(response.getEntity()));
     }
 
-    fun get(url: String, arguments: Map<String, String?>?, id: String): String {
+    fun get(url: String, arguments: Map<String, String?>?, id: String): String? {
         val client = HttpClient.newBuilder().build()
         val request = HttpRequest.newBuilder(URI.create(url))
                 .header("Authorization", id)
                 .GET()
                 .build()
-        try {
+        return try {
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            return response.body()
+            response.body()
         } catch (e: Exception) {
             e.printStackTrace()
-            return ""
+            null
         }
 
         // Print out the response message
@@ -106,7 +109,7 @@ class SimulationTest {
             if (builder.isNotEmpty()) {
                 builder.append("&")
             }
-            builder.append(URLEncoder.encode(key.toString(), StandardCharsets.UTF_8))
+            builder.append(URLEncoder.encode(key, StandardCharsets.UTF_8))
             builder.append("=")
             builder.append(URLEncoder.encode(value.toString(), StandardCharsets.UTF_8))
         }

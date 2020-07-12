@@ -5,5 +5,5 @@ RUN gradle build
 
 FROM openjdk:14-jdk-alpine
 RUN mkdir /app
-COPY --from=build /home/gradle/src/build/libs/*.jar /app/app.jar
+COPY --from=build /home/gradle/src/build/libs/airwaves-web.jar /app/app.jar
 ENTRYPOINT ["java","-jar","/app/app.jar"]
