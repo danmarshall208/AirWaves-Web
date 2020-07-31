@@ -1,11 +1,14 @@
 package com.airwaves.airwavesweb.datastore
 
+import com.airwaves.airwavesweb.util.requireListOf
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 class User(id: String? = null, data: MutableMap<String, Any>? = null) : Document() {
+
     override val collectionName = "user"
+
     override val defaultData = HashMap<String, Any>()
 
     init {
@@ -37,9 +40,8 @@ class User(id: String? = null, data: MutableMap<String, Any>? = null) : Document
             data["longitude"] = longitude
         }
 
-    @Suppress("UNCHECKED_CAST")
     var favSongs: List<String>
-        get() = data["favourite_songs"] as? List<String> ?: ArrayList<String>()
+        get() = data["favourite_songs"]?.requireListOf() ?: ArrayList()
         set(songs) {
             data["favourite_songs"] = songs
         }

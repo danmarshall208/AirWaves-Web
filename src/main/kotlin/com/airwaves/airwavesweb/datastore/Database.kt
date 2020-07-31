@@ -6,11 +6,11 @@ import com.google.cloud.firestore.FirestoreOptions
 import java.io.IOException
 
 object Database {
+
     val db: Firestore
 
     init {
-        val credentials: GoogleCredentials
-        credentials = try {
+        val credentials = try {
             GoogleCredentials.getApplicationDefault()
         } catch (e: IOException) {
             throw RuntimeException(e)
@@ -21,4 +21,5 @@ object Database {
                 .build()
         db = firestoreOptions.service
     }
+
 }

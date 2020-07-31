@@ -9,8 +9,11 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class GpsController {
+
     @PostMapping("/gps")
-    fun receive_gps(@RequestHeader Authorization: String, @RequestParam latitude: String, @RequestParam longitude: String) {
+    fun receiveGps(@RequestHeader Authorization: String,
+                   @RequestParam latitude: String,
+                   @RequestParam longitude: String) {
         val user = User(Authorization)
         user.latitude = latitude.toDouble()
         user.longitude = longitude.toDouble()
@@ -22,4 +25,5 @@ class GpsController {
         }
         user.save()
     }
+
 }

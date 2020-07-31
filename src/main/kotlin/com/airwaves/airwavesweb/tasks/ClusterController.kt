@@ -1,7 +1,7 @@
 package com.airwaves.airwavesweb.tasks
 
 import com.airwaves.airwavesweb.datastore.Cluster
-import com.airwaves.airwavesweb.datastore.Cluster.Companion.maxUsers
+import com.airwaves.airwavesweb.datastore.Cluster.Companion.MAX_USERS
 import com.airwaves.airwavesweb.datastore.User
 import com.airwaves.airwavesweb.util.LocationWrapper
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer
@@ -11,6 +11,7 @@ import java.util.*
 
 @RestController
 class ClusterController {
+
     @GetMapping("/update-clusters")
     fun update_clusters() {
         val oldClusters = Cluster.all
@@ -21,7 +22,7 @@ class ClusterController {
         for (user in User.all) {
             users.add(LocationWrapper(user))
         }
-        val clusterer = KMeansPlusPlusClusterer<LocationWrapper>(users.size / maxUsers)
+        val clusterer = KMeansPlusPlusClusterer<LocationWrapper>(users.size / MAX_USERS)
         val results = clusterer.cluster(users)
         for (result in results) {
             val clusteredUsers = result.points.map { x -> x.user }
@@ -37,4 +38,5 @@ class ClusterController {
             }
         }
     }
+
 }

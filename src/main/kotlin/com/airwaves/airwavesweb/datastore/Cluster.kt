@@ -6,19 +6,22 @@ import java.util.*
 import java.util.stream.Collectors
 
 class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Document() {
+
     override val collectionName = "cluster"
+
     override val defaultData: HashMap<String, Any> = hashMapOf(
-            "longitude" to 0.0,
-            "latitude" to 0.0,
-            "users" to 0L
-    );
+            LONGITUDE_KEY to 0.0,
+            LATITUDE_KEY to 0.0,
+            USERS_KEY to 0L
+    )
+
     val latitude: Double
-        get() = data["latitude"] as? Double ?: 0.0
+        get() = data[LATITUDE_KEY] as? Double ?: 0.0
 
     val longitude: Double
-        get() = data["longitude"] as? Double ?: 0.0
+        get() = data[LONGITUDE_KEY] as? Double ?: 0.0
 
-    val users: List<User>
+    private val users: List<User>
         get() = db.collection("user").whereEqualTo("cluster", id).get().get().documents
                 .stream().map { x: QueryDocumentSnapshot -> User(x.id) }.collect(Collectors.toList())
 
@@ -27,7 +30,6 @@ class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Docum
     }
 
     fun calculatePosition() {
-        val users = users
         val avgLatitude = users.stream().mapToDouble { obj: User -> obj.latitude }.average()
         val avgLongitude = users.stream().mapToDouble { obj: User -> obj.longitude }.average()
         if (avgLatitude.isPresent && avgLongitude.isPresent) {
@@ -36,19 +38,18 @@ class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Docum
     }
 
     fun setLocation(latitude: Double, longitude: Double) {
-        data["latitude"] = latitude
-        data["longitude"] = longitude
+        data[LATITUDE_KEY] = latitude
+        data[LONGITUDE_KEY] = longitude
     }
 
     fun adjustUsers(adjustment: Long) {
-        data["users"] = data["users"] as Long + adjustment
+        data[USERS_KEY] = data[USERS_KEY] as Long + adjustment
     }
 
     fun splitOrMerge() {
-        val users = users
-        if (users.size > maxUsers) {
-            this.split()
-        } else if (users.size < minUsers) {
+        if (users.size > MAX_USERS) {
+            split()
+        } else if (users.size < MIN_USERS) {
             merge()
         }
     }
@@ -64,7 +65,6 @@ class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Docum
 
     private fun split() {
         val newCluster = Cluster()
-        val users = users
         for (i in 0 until users.size / 2) {
             val user = users[i]
             user.cluster = newCluster
@@ -79,11 +79,17 @@ class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Docum
     }
 
     companion object {
-        var maxUsers = 20
-        val minUsers = 5
+        const val MAX_USERS = 20
+        const val MIN_USERS = 5
+
+        private const val USERS_KEY = "users"
+        private const val LATITUDE_KEY = "latitude"
+        private const val LONGITUDE_KEY = "longitude"
+
         var writes = 0
         var reads = 0
         val all: List<Cluster>
             get() = getAll(::Cluster, "cluster")
     }
+
 }

@@ -6,6 +6,7 @@ import java.util.*
 import kotlin.reflect.KFunction2
 
 abstract class Document {
+
     var companion = Companion
     val db: Firestore = Database.db
     abstract val collectionName: String
@@ -71,4 +72,5 @@ abstract class Document {
             return documents
         }
     }
+
 }

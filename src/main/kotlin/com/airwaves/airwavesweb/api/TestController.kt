@@ -8,27 +8,24 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class TestController {
+
     @GetMapping("/testclusters")
-    fun testclusters(): List<Map<String, Any>> {
-        return Cluster.all.map { x -> x.data }
-    }
+    fun testClusters(): List<Map<String, Any>> = Cluster.all.map { x -> x.data }
 
     @GetMapping("/testusers")
-    fun testusers(): List<Map<String, Any>> {
-        return User.all.map { x -> x.data }
-    }
+    fun testUsers(): List<Map<String, Any>> = User.all.map { x -> x.data }
 
     @GetMapping("/testreads")
-    fun testreads(): Map<String, Any> {
-        return mapOf("User reads" to User.reads, "User writes" to User.writes,
-                "Cluster reads" to Cluster.reads, "Cluster writes" to Cluster.writes,
-                "Document reads" to Document.reads, "Document writes" to Document.writes
-        )
-    }
+    fun testReads(): Map<String, Any> = mapOf(
+            "User reads" to User.reads, "User writes" to User.writes,
+            "Cluster reads" to Cluster.reads, "Cluster writes" to Cluster.writes,
+            "Document reads" to Document.reads, "Document writes" to Document.writes
+    )
 
     @GetMapping("/clear")
     fun clear() {
         Cluster.all.forEach(Cluster::delete)
         User.all.forEach(User::delete)
     }
+
 }

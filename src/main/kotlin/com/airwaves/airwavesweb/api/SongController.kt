@@ -7,9 +7,11 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class SongController {
+
     @GetMapping("/song")
-    fun send_song(@RequestHeader Authorization: String): String? {
+    fun sendSong(@RequestHeader Authorization: String): String? {
         val user = User(Authorization)
         return user.cluster?.randomSong()
     }
+
 }

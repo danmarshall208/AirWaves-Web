@@ -8,10 +8,15 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class SettingsController {
+
     @PostMapping("/fav-songs")
-    fun receive_fav_songs(@RequestHeader Authorization: String, @RequestParam fav_song_1: String, @RequestParam fav_song_2: String, @RequestParam fav_song_3: String) {
+    fun receiveFavSongs(@RequestHeader Authorization: String,
+                        @RequestParam fav_song_1: String,
+                        @RequestParam fav_song_2: String,
+                        @RequestParam fav_song_3: String) {
         val user = User(Authorization)
         user.favSongs = listOf(fav_song_1, fav_song_2, fav_song_3)
         user.save()
     }
+
 }
