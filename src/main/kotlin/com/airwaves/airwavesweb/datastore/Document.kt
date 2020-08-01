@@ -42,13 +42,9 @@ abstract class Document {
         } else {
             db.collection(collectionName).document(id)
         }
-
-
     }
 
-    fun exists(): Boolean {
-        return documentRef.get().get().exists()
-    }
+    fun exists(): Boolean = documentRef.get().get().exists()
 
     fun save() {
         data["updated"] = Date()
