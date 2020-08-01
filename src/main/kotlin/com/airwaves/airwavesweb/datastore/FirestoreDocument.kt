@@ -1,17 +1,17 @@
 package com.airwaves.airwavesweb.datastore
 
+import com.airwaves.airwavesweb.datastore.Database.UPDATED_KEY
 import com.google.cloud.firestore.DocumentReference
 import com.google.cloud.firestore.Firestore
 import java.util.*
 import kotlin.reflect.KFunction2
 
-abstract class Document {
+abstract class FirestoreDocument {
 
-    var companion = Companion
     val db: Firestore = Database.db
     abstract val collectionName: String
     abstract val defaultData: HashMap<String, Any>
-    lateinit var documentRef: DocumentReference
+    private lateinit var documentRef: DocumentReference
     private lateinit var _data: MutableMap<String, Any>
     private var initialized = false
 
@@ -21,7 +21,7 @@ abstract class Document {
     var data: MutableMap<String, Any>
         get() {
             if (!initialized) {
-                companion.reads++
+                reads++
                 val remoteData = documentRef.get().get().data
                 _data = if (remoteData != null) HashMap(remoteData) else defaultData
                 initialized = true
@@ -47,9 +47,9 @@ abstract class Document {
     fun exists(): Boolean = documentRef.get().get().exists()
 
     fun save() {
-        data["updated"] = Date()
+        data[UPDATED_KEY] = Date()
         documentRef.set(data)
-        companion.writes++
+        writes++
     }
 
     fun delete() {

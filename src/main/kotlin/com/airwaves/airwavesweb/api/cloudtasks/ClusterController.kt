@@ -1,7 +1,10 @@
-package com.airwaves.airwavesweb.tasks
+package com.airwaves.airwavesweb.api.cloudtasks
 
 import com.airwaves.airwavesweb.datastore.Cluster
 import com.airwaves.airwavesweb.datastore.Cluster.Companion.MAX_USERS
+import com.airwaves.airwavesweb.datastore.Database.LATITUDE_KEY
+import com.airwaves.airwavesweb.datastore.Database.LONGITUDE_KEY
+import com.airwaves.airwavesweb.datastore.Database.USERS_KEY
 import com.airwaves.airwavesweb.datastore.User
 import com.airwaves.airwavesweb.util.LocationWrapper
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer
@@ -13,23 +16,21 @@ import java.util.*
 class ClusterController {
 
     @GetMapping("/update-clusters")
-    fun update_clusters() {
-        val oldClusters = Cluster.all
-        for (cluster in oldClusters) {
-            cluster.delete()
-        }
-        val users: MutableList<LocationWrapper> = ArrayList()
-        for (user in User.all) {
-            users.add(LocationWrapper(user))
-        }
+    fun updateClusters() {
+
+        // Delete old clusters
+        Cluster.all.forEach { it.delete() }
+
+        // Create new clusters based on user locations
+        val users = User.all.map { LocationWrapper(it) }
         val clusterer = KMeansPlusPlusClusterer<LocationWrapper>(users.size / MAX_USERS)
         val results = clusterer.cluster(users)
         for (result in results) {
             val clusteredUsers = result.points.map { x -> x.user }
             val cluster = Cluster(null, hashMapOf(
-                    "users" to clusteredUsers.size.toLong(),
-                    "latitude" to result.center.point[0],
-                    "longitude" to result.center.point[1]
+                    USERS_KEY to clusteredUsers.size.toLong(),
+                    LATITUDE_KEY to result.center.point[0],
+                    LONGITUDE_KEY to result.center.point[1]
             ))
             cluster.save()
             for (user in clusteredUsers) {

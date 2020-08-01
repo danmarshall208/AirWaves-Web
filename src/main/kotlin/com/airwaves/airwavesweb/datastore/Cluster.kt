@@ -1,13 +1,19 @@
 package com.airwaves.airwavesweb.datastore
 
+import com.airwaves.airwavesweb.datastore.Database.CLUSTER_KEY
+import com.airwaves.airwavesweb.datastore.Database.FAVOURITE_SONGS_KEY
+import com.airwaves.airwavesweb.datastore.Database.LATITUDE_KEY
+import com.airwaves.airwavesweb.datastore.Database.LONGITUDE_KEY
+import com.airwaves.airwavesweb.datastore.Database.USERS_KEY
+import com.airwaves.airwavesweb.datastore.Database.USER_KEY
 import com.airwaves.airwavesweb.util.Util
 import com.google.cloud.firestore.QueryDocumentSnapshot
 import java.util.*
 import java.util.stream.Collectors
 
-class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Document() {
+class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : FirestoreDocument() {
 
-    override val collectionName = "cluster"
+    override val collectionName = CLUSTER_KEY
 
     override val defaultData: HashMap<String, Any> = hashMapOf(
             LONGITUDE_KEY to 0.0,
@@ -22,7 +28,7 @@ class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Docum
         get() = data[LONGITUDE_KEY] as? Double ?: 0.0
 
     private val users: List<User>
-        get() = db.collection("user").whereEqualTo("cluster", id).get().get().documents
+        get() = db.collection(USER_KEY).whereEqualTo(CLUSTER_KEY, id).get().get().documents
                 .stream().map { x: QueryDocumentSnapshot -> User(x.id) }.collect(Collectors.toList())
 
     init {
@@ -57,9 +63,9 @@ class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Docum
     fun randomSong(): String {
         //val charPool = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         //val randomChar = charPool[kotlin.random.Random.nextInt(0, charPool.size)]
-        val songs = Database.db.collection("user").whereEqualTo("cluster", id).orderBy("favourite_songs")
+        val songs = Database.db.collection(USER_KEY).whereEqualTo(CLUSTER_KEY, id).orderBy(FAVOURITE_SONGS_KEY)
                 .limit(1).startAt(Random().nextLong().toString())
-                .get().get().documents[0].data["favourite_songs"] as List<*>
+                .get().get().documents[0].data[FAVOURITE_SONGS_KEY] as List<*>
         return songs[kotlin.random.Random.nextInt(0, 2)].toString()
     }
 
@@ -82,14 +88,10 @@ class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Docum
         const val MAX_USERS = 20
         const val MIN_USERS = 5
 
-        private const val USERS_KEY = "users"
-        private const val LATITUDE_KEY = "latitude"
-        private const val LONGITUDE_KEY = "longitude"
-
         var writes = 0
         var reads = 0
         val all: List<Cluster>
-            get() = getAll(::Cluster, "cluster")
+            get() = getAll(::Cluster, CLUSTER_KEY)
     }
 
 }

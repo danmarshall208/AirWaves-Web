@@ -1,4 +1,4 @@
-package com.airwaves.airwavesweb.tasks
+package com.airwaves.airwavesweb.api.cloudtasks
 
 import com.airwaves.airwavesweb.datastore.User.Companion.all
 import org.springframework.web.bind.annotation.GetMapping
@@ -9,7 +9,7 @@ import java.util.*
 class UserController {
 
     @GetMapping("/clean-users")
-    fun clean_users() {
+    fun cleanUsers() {
         val currentTime = Date()
         for (user in all) {
             if (currentTime.time - user.updated.time > 1000 * 60 * 2) {

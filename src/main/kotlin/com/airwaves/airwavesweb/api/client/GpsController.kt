@@ -1,4 +1,4 @@
-package com.airwaves.airwavesweb.api
+package com.airwaves.airwavesweb.api.client
 
 import com.airwaves.airwavesweb.datastore.User
 import com.airwaves.airwavesweb.util.Util.findClosestCluster

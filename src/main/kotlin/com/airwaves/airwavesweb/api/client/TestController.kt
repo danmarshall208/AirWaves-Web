@@ -1,7 +1,7 @@
-package com.airwaves.airwavesweb.api
+package com.airwaves.airwavesweb.api.client
 
 import com.airwaves.airwavesweb.datastore.Cluster
-import com.airwaves.airwavesweb.datastore.Document
+import com.airwaves.airwavesweb.datastore.FirestoreDocument
 import com.airwaves.airwavesweb.datastore.User
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
@@ -19,7 +19,7 @@ class TestController {
     fun testReads(): Map<String, Any> = mapOf(
             "User reads" to User.reads, "User writes" to User.writes,
             "Cluster reads" to Cluster.reads, "Cluster writes" to Cluster.writes,
-            "Document reads" to Document.reads, "Document writes" to Document.writes
+            "Document reads" to FirestoreDocument.reads, "Document writes" to FirestoreDocument.writes
     )
 
     @GetMapping("/clear")
