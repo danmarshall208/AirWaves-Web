@@ -2,7 +2,6 @@ package com.airwaves.airwavesweb.api.client
 
 import com.airwaves.airwavesweb.datastore.User
 import com.airwaves.airwavesweb.util.Util.findClosestCluster
-import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
@@ -12,16 +11,16 @@ import org.springframework.web.bind.annotation.RestController
 class GpsController {
 
     @PostMapping("/gps")
-    fun receiveGps(@RequestHeader @JsonProperty("Authorization") authorization: String,
-                   @RequestParam  @JsonProperty("latitude") latitude: String,
-                   @RequestParam  @JsonProperty("longitude") longitude: String) {
+    fun receiveGps(@RequestHeader("Authorization") authorization: String,
+                   @RequestParam("latitude") latitude: String,
+                   @RequestParam("longitude") longitude: String) {
         val user = User(authorization)
-        user.latitude = latitude.toDouble()
-        user.longitude = longitude.toDouble()
+        user.data.latitude = latitude.toDouble()
+        user.data.longitude = longitude.toDouble()
         if (!user.exists()) {
             val cluster = findClosestCluster(user)
             user.cluster = cluster
-            cluster.adjustUsers(1)
+            cluster.data.userCount = cluster.data.userCount + 1
             cluster.save()
         }
         user.save()

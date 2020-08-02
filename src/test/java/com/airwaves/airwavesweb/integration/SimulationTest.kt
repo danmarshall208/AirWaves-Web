@@ -12,11 +12,12 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 
 class SimulationTest {
-    //var BASE_URL = "http://localhost:8080"
-    var BASE_URL = "https://airwaves-web-gc7hm476va-uc.a.run.app/"
-    var GPS_POST_URL = "$BASE_URL/gps"
-    var SONGS_POST_URL = "$BASE_URL/fav-songs"
-    var SONG_GET_URL = "$BASE_URL/song"
+    private var baseUrl = "http://localhost:8080"
+
+    //var BASE_URL = "https://airwaves-web-gc7hm476va-uc.a.run.app/"
+    private var gpsPostUrl = "$baseUrl/gps"
+    private var songsPostUrl = "$baseUrl/fav-songs"
+    private var songGetUrl = "$baseUrl/song"
 
     @Test
     fun runTest() {
@@ -46,28 +47,28 @@ class SimulationTest {
         }
     }
 
-    fun postGps(user: TestUser) {
+    private fun postGps(user: TestUser) {
         val arguments = mapOf(
                 "latitude" to user.latitude.toString(),
                 "longitude" to user.longitude.toString()
         )
-        post(GPS_POST_URL, arguments, user.id!!)
+        post(gpsPostUrl, arguments, user.id!!)
     }
 
-    fun postSongs(user: TestUser) {
+    private fun postSongs(user: TestUser) {
         val arguments = mapOf(
                 "fav_song_1" to user.fav_song_1,
                 "fav_song_2" to user.fav_song_2,
                 "fav_song_3" to user.fav_song_3
         )
-        post(SONGS_POST_URL, arguments, user.id!!)
+        post(songsPostUrl, arguments, user.id!!)
     }
 
-    fun getSong(user: TestUser): String? {
-        return get(SONG_GET_URL, null, user.id!!)
+    private fun getSong(user: TestUser): String? {
+        return get(songGetUrl, null, user.id!!)
     }
 
-    fun post(url: String, arguments: Map<String, String?>, id: String): String? {
+    private fun post(url: String, arguments: Map<String, String?>, id: String): String? {
         val client = HttpClient.newBuilder().build()
         val request = HttpRequest.newBuilder(URI.create(url))
                 .header("Authorization", id)
@@ -103,7 +104,7 @@ class SimulationTest {
         //System.out.println(EntityUtils.toString(response.getEntity()));
     }
 
-    fun ofFormData(data: Map<String, String?>): BodyPublisher? {
+    private fun ofFormData(data: Map<String, String?>): BodyPublisher? {
         val builder = StringBuilder()
         for ((key, value) in data) {
             if (builder.isNotEmpty()) {

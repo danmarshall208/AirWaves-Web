@@ -1,40 +1,43 @@
 package com.airwaves.airwavesweb.datastore
 
-import com.airwaves.airwavesweb.datastore.Database.UPDATED_KEY
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.cloud.firestore.DocumentReference
 import com.google.cloud.firestore.Firestore
+import com.google.cloud.firestore.QueryDocumentSnapshot
 import java.util.*
-import kotlin.reflect.KFunction2
 
-abstract class FirestoreDocument {
+// You can't have reified classes... so pass clazz as a param :(
+abstract class FirestoreDocument<T : FirestoreDocument.DocumentData>(private val clazz: Class<T>) {
 
-    val db: Firestore = Database.db
-    abstract val collectionName: String
-    abstract val defaultData: HashMap<String, Any>
     private lateinit var documentRef: DocumentReference
-    private lateinit var _data: MutableMap<String, Any>
+    private lateinit var _data: T
     private var initialized = false
+
+    protected val db: Firestore = Database.db
+    protected abstract val collectionName: String
 
     val id: String
         get() = documentRef.id
 
-    var data: MutableMap<String, Any>
+    var data: T
+        // Fetch data from firestore on first access only
         get() {
             if (!initialized) {
                 reads++
                 val remoteData = documentRef.get().get().data
-                _data = if (remoteData != null) HashMap(remoteData) else defaultData
+                _data = if (remoteData != null) fromMap(remoteData) else clazz.getDeclaredConstructor().newInstance()
                 initialized = true
             }
-            return this._data
+            return _data
         }
         set(value) {
             _data = value
         }
 
-    fun init(id: String?, data: MutableMap<String, Any>?) {
+    protected fun init(id: String?, data: T?) {
         if (data != null) {
-            this._data = data
+            this.data = data
             initialized = true
         }
         documentRef = if (id == null) {
@@ -47,8 +50,8 @@ abstract class FirestoreDocument {
     fun exists(): Boolean = documentRef.get().get().exists()
 
     fun save() {
-        data[UPDATED_KEY] = Date()
-        documentRef.set(data)
+        data.updated = Date()
+        documentRef.set(toMap())
         writes++
     }
 
@@ -56,17 +59,24 @@ abstract class FirestoreDocument {
         documentRef.delete()
     }
 
+    private fun fromMap(mapData: Map<String, Any>): T {
+        return jacksonObjectMapper().convertValue(mapData, clazz)
+    }
+
+    private fun toMap(): Map<String, Any> {
+        return jacksonObjectMapper().convertValue(data)
+    }
+
+    abstract class DocumentData {
+        var updated = Date()
+    }
+
     companion object {
         var writes = 0
         var reads = 0
 
-        fun <T> getAll(type: KFunction2<String?, MutableMap<String, Any>?, T>, collectionName: String): List<T> {
-            val documents = ArrayList<T>()
-            for (document in Database.db.collection(collectionName).get().get().documents) {
-                documents.add(type(document.id, document.data))
-            }
-            return documents
-        }
+        fun getAll(collectionName: String): MutableList<QueryDocumentSnapshot> = Database.db.collection(collectionName)
+                .get().get().documents
     }
 
 }

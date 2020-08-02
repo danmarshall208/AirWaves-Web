@@ -12,7 +12,7 @@ class UserController {
     fun cleanUsers() {
         val currentTime = Date()
         for (user in all) {
-            if (currentTime.time - user.updated.time > 1000 * 60 * 2) {
+            if (currentTime.time - user.data.updated.time > 1000 * 60 * 2) {
                 user.delete()
             }
         }

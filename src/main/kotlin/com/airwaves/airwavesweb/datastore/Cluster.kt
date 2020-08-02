@@ -2,87 +2,72 @@ package com.airwaves.airwavesweb.datastore
 
 import com.airwaves.airwavesweb.datastore.Database.CLUSTER_KEY
 import com.airwaves.airwavesweb.datastore.Database.FAVOURITE_SONGS_KEY
-import com.airwaves.airwavesweb.datastore.Database.LATITUDE_KEY
-import com.airwaves.airwavesweb.datastore.Database.LONGITUDE_KEY
-import com.airwaves.airwavesweb.datastore.Database.USERS_KEY
 import com.airwaves.airwavesweb.datastore.Database.USER_KEY
-import com.airwaves.airwavesweb.util.Util
+import com.fasterxml.jackson.module.kotlin.convertValue
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.cloud.firestore.QueryDocumentSnapshot
 import java.util.*
 import java.util.stream.Collectors
 
-class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : FirestoreDocument() {
+class Cluster(id: String? = null, initData: ClusterData? = null) :
+        FirestoreDocument<Cluster.ClusterData>(ClusterData::class.java) {
 
     override val collectionName = CLUSTER_KEY
 
-    override val defaultData: HashMap<String, Any> = hashMapOf(
-            LONGITUDE_KEY to 0.0,
-            LATITUDE_KEY to 0.0,
-            USERS_KEY to 0L
-    )
+    init {
+        init(id, initData)
+    }
 
-    val latitude: Double
-        get() = data[LATITUDE_KEY] as? Double ?: 0.0
-
-    val longitude: Double
-        get() = data[LONGITUDE_KEY] as? Double ?: 0.0
-
-    private val users: List<User>
+    val users: List<User>
         get() = db.collection(USER_KEY).whereEqualTo(CLUSTER_KEY, id).get().get().documents
                 .stream().map { x: QueryDocumentSnapshot -> User(x.id) }.collect(Collectors.toList())
 
-    init {
-        init(id, data)
-    }
-
-    fun calculatePosition() {
-        val avgLatitude = users.stream().mapToDouble { obj: User -> obj.latitude }.average()
-        val avgLongitude = users.stream().mapToDouble { obj: User -> obj.longitude }.average()
-        if (avgLatitude.isPresent && avgLongitude.isPresent) {
-            setLocation(avgLatitude.asDouble, avgLongitude.asDouble)
-        }
-    }
-
-    fun setLocation(latitude: Double, longitude: Double) {
-        data[LATITUDE_KEY] = latitude
-        data[LONGITUDE_KEY] = longitude
-    }
-
-    fun adjustUsers(adjustment: Long) {
-        data[USERS_KEY] = data[USERS_KEY] as Long + adjustment
-    }
-
-    fun splitOrMerge() {
-        if (users.size > MAX_USERS) {
-            split()
-        } else if (users.size < MIN_USERS) {
-            merge()
-        }
-    }
-
-    fun randomSong(): String {
+    fun randomSong(): String? {
+        // Needed if we want to use strings rather than ints for ids
         //val charPool = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         //val randomChar = charPool[kotlin.random.Random.nextInt(0, charPool.size)]
-        val songs = Database.db.collection(USER_KEY).whereEqualTo(CLUSTER_KEY, id).orderBy(FAVOURITE_SONGS_KEY)
+        val users = Database.db.collection(USER_KEY).whereEqualTo(CLUSTER_KEY, id).orderBy(FAVOURITE_SONGS_KEY)
                 .limit(1).startAt(Random().nextLong().toString())
-                .get().get().documents[0].data[FAVOURITE_SONGS_KEY] as List<*>
+                .get().get().documents
+        if (users.size == 0) {
+            return null
+        }
+        val songs = users[0].data[FAVOURITE_SONGS_KEY] as List<*>
         return songs[kotlin.random.Random.nextInt(0, 2)].toString()
     }
 
-    private fun split() {
-        val newCluster = Cluster()
-        for (i in 0 until users.size / 2) {
-            val user = users[i]
-            user.cluster = newCluster
-        }
-    }
-
-    private fun merge() {
-        val closest = Util.findClosestCluster(this)
-        for (user in users) {
-            user.cluster = closest
-        }
-    }
+//// This clustering algorithm not used atm
+//    private fun split() {
+//        val newCluster = Cluster()
+//        for (i in 0 until users.size / 2) {
+//            val user = users[i]
+//            user.cluster = newCluster
+//        }
+//    }
+//
+//    fun calculatePosition() {
+//        val avgLatitude = users.stream().mapToDouble { obj: User -> obj.latitude }.average()
+//        val avgLongitude = users.stream().mapToDouble { obj: User -> obj.longitude }.average()
+//        if (avgLatitude.isPresent && avgLongitude.isPresent) {
+//            data.latitude = latitude
+//            data.longitude = longitude
+//        }
+//    }
+//
+//    fun splitOrMerge() {
+//        if (users.size > MAX_USERS) {
+//            split()
+//        } else if (users.size < MIN_USERS) {
+//            merge()
+//        }
+//    }
+//
+//    private fun merge() {
+//        val closest = Util.findClosestCluster(this)
+//        for (user in users) {
+//            user.cluster = closest
+//        }
+//    }
 
     companion object {
         const val MAX_USERS = 20
@@ -91,7 +76,15 @@ class Cluster(id: String? = null, data: MutableMap<String, Any>? = null) : Fires
         var writes = 0
         var reads = 0
         val all: List<Cluster>
-            get() = getAll(::Cluster, CLUSTER_KEY)
+            get() {
+                val documents = ArrayList<Cluster>()
+                for (document in getAll(CLUSTER_KEY)) {
+                    documents.add(Cluster(document.id, jacksonObjectMapper().convertValue(document.data)))
+                }
+                return documents
+            }
     }
 
+    data class ClusterData(var latitude: Double = 0.0, var longitude: Double = 0.0, var userCount: Long = 0) :
+            DocumentData()
 }
